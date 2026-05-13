@@ -1,0 +1,26 @@
+# Secrets
+.env
+.env.local
+credentials/*.json
+
+# Data
+data/jobs.db
+data/jobs.db-journal
+data/logs/*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+build/
+dist/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
