@@ -1,8 +1,10 @@
 from __future__ import annotations
+import os
 from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from job_identifier.models import (
@@ -12,6 +14,7 @@ from job_identifier.models import (
     RunIndustryConfig,
     RunSkillConfig,
     ScoreWeights,
+    Secrets,
 )
 
 
@@ -92,3 +95,28 @@ def load_runs(path: Path) -> list[RunConfig]:
         )
         for r in data.runs
     ]
+
+
+def load_secrets(run_names: list[str], dotenv_path: Path | None = None) -> Secrets:
+    if dotenv_path is None and Path(".env").exists():
+        load_dotenv(".env")
+    elif dotenv_path is not None:
+        load_dotenv(dotenv_path)
+
+    def _required(key: str) -> str:
+        val = os.environ.get(key)
+        if not val:
+            raise RuntimeError(f"Required environment variable {key} is not set")
+        return val
+
+    workbook_ids: dict[str, str] = {}
+    for name in run_names:
+        env_key = f"GSHEET_WORKBOOK_{name.upper()}"
+        workbook_ids[name] = _required(env_key)
+
+    return Secrets(
+        serpapi_key=_required("SERPAPI_KEY"),
+        firecrawl_api_key=_required("FIRECRAWL_API_KEY"),
+        google_sheets_creds_path=_required("GOOGLE_SHEETS_CREDS_PATH"),
+        workbook_ids_by_run=workbook_ids,
+    )
