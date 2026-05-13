@@ -1,0 +1,67 @@
+{
+  "search_metadata": {
+    "status": "Success",
+    "google_jobs_url": "https://www.google.com/search?q=palantir+foundry+insurance"
+  },
+  "jobs_results": [
+    {
+      "title": "Senior Palantir Foundry Engineer",
+      "company_name": "Acme Insurance Inc",
+      "location": "New York, NY",
+      "via": "via LinkedIn",
+      "description": "We are hiring a Senior Palantir Foundry engineer to lead our data platform team. You will work on claims analytics and underwriting workflows in Foundry. Experience with AIP is a plus.",
+      "detected_extensions": {
+        "posted_at": "5 days ago",
+        "schedule_type": "Full-time"
+      },
+      "share_link": "https://www.google.com/search?ibp=htl;jobs#job_1",
+      "apply_options": [
+        {"link": "https://linkedin.com/jobs/view/1234"}
+      ]
+    },
+    {
+      "title": "Foundry Solutions Architect",
+      "company_name": "Hamilton Re Ltd",
+      "location": "Hamilton, Bermuda",
+      "via": "via Indeed",
+      "description": "Hamilton Re is hiring a Foundry Solutions Architect to design our reinsurance data platform. You will own the architecture for our property catastrophe workflows.",
+      "detected_extensions": {
+        "posted_at": "12 days ago",
+        "schedule_type": "Full-time"
+      },
+      "share_link": "https://www.google.com/search?ibp=htl;jobs#job_2",
+      "apply_options": [
+        {"link": "https://hamiltonre.com/careers/2"}
+      ]
+    },
+    {
+      "title": "Marketing Analyst",
+      "company_name": "Generic Marketing Co",
+      "location": "Toronto, ON",
+      "via": "via Indeed",
+      "description": "Looking for a marketing analyst. No tech experience required. We work with creative agencies.",
+      "detected_extensions": {
+        "posted_at": "3 days ago",
+        "schedule_type": "Full-time"
+      },
+      "share_link": "https://www.google.com/search?ibp=htl;jobs#job_3",
+      "apply_options": [
+        {"link": "https://indeed.com/jobs/3"}
+      ]
+    },
+    {
+      "title": "Senior Engineer - Palantir Foundry",
+      "company_name": "Accenture",
+      "location": "Chicago, IL",
+      "via": "via Glassdoor",
+      "description": "Accenture is hiring a senior engineer with Palantir Foundry experience. You will deliver Foundry implementations for our insurance clients.",
+      "detected_extensions": {
+        "posted_at": "8 days ago"
+      },
+      "share_link": "https://www.google.com/search?ibp=htl;jobs#job_4",
+      "apply_options": [
+        {"link": "https://accenture.com/careers/4"}
+      ]
+    }
+  ]
+}

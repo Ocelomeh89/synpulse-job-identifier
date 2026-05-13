@@ -1,0 +1,20 @@
+[
+  {
+    "company_normalized": "acme insurance",
+    "title": "Senior Palantir Foundry Engineer",
+    "country": "US",
+    "skill_matches": ["Foundry", "AIP"],
+    "industry_match": true,
+    "role_type": "ENGINEERING",
+    "seniority": "SENIOR_IC"
+  },
+  {
+    "company_normalized": "hamilton re",
+    "title": "Foundry Solutions Architect",
+    "country": "BM",
+    "skill_matches": ["Foundry"],
+    "industry_match": true,
+    "role_type": "ENGINEERING",
+    "seniority": "IC"
+  }
+]
