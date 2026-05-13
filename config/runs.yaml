@@ -1,0 +1,46 @@
+defaults:
+  recency_window_days: 90
+  score_weights:
+    recency: 0.6
+    seniority: 0.4
+  enrichment:
+    firecrawl_min_jd_chars: 500
+  output:
+    companies_tab: "Companies"
+    postings_tab: "Postings"
+    archived_tab: "Archived"
+
+runs:
+  - name: palantir_insurance
+    enabled: true
+    skill:
+      hard_match_regex: '\b(Foundry|AIP)\b'
+      query_terms:
+        - '"Palantir Foundry" insurance'
+        - '"Palantir AIP" insurance'
+        - 'Palantir reinsurance'
+    industry:
+      include_keywords:
+        - insurance
+        - insurer
+        - carrier
+        - reinsurance
+        - reinsurer
+        - underwriting
+        - claims
+        - seguros
+        - aseguradora
+        - reaseguradora
+        - suscripción
+        - siniestros
+      deny_companies:
+        - Palantir Technologies
+        - Accenture
+        - Deloitte
+        - IBM
+        - Capgemini
+        - Cognizant
+        - Tata Consultancy
+        - Infosys
+        - Wipro
+    geos: [US, CA, MX, UK, BM]
