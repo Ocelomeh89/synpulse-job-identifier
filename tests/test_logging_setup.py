@@ -1,6 +1,4 @@
 import json
-import logging
-from pathlib import Path
 from job_identifier.logging_setup import setup_run_logger
 
 

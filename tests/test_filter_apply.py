@@ -1,7 +1,6 @@
 from dataclasses import replace
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
-import pytest
 from job_identifier.filter import apply as filter_apply
 from job_identifier.models import (
     EnrichmentConfig, OutputConfig, Posting, RoleType, RunConfig,

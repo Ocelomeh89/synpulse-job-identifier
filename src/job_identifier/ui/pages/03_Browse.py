@@ -1,5 +1,4 @@
 from pathlib import Path
-import json
 import streamlit as st
 
 from job_identifier.store import Store

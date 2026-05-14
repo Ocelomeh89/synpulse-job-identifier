@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date
 from job_identifier.normalize import normalize_serpapi_jobs
 
 

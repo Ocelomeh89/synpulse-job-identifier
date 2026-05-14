@@ -142,8 +142,8 @@ def write_sheets(workbook, postings: list[Posting], output_config) -> None:
         workbook.archived_tab.append_rows(archived)
 
 
-import gspread
-from google.oauth2.service_account import Credentials
+import gspread  # noqa: E402  -- lazy: only needed when concrete Workbook is used
+from google.oauth2.service_account import Credentials  # noqa: E402
 
 _SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
