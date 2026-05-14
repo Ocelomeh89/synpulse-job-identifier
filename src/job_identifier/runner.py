@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 from dataclasses import asdict
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from ulid import ULID
@@ -10,6 +11,7 @@ from job_identifier import filter as filter_module
 from job_identifier import score as score_module
 from job_identifier.dedupe import tag_is_new
 from job_identifier.enrich.firecrawl_jd import fill_short_descriptions
+from job_identifier.logging_setup import setup_run_logger
 from job_identifier.models import RunConfig, RunResult, Secrets
 from job_identifier.normalize import normalize_serpapi_jobs
 from job_identifier.sink.sheets import GspreadWorkbook, write_sheets
@@ -51,97 +53,103 @@ def run(
         status="running",
         summary=summary,
     )
-
+    log_dir = Path("data/logs")
+    file_logger, handler = setup_run_logger(run_id, log_dir)
     try:
-        responses = fetch_jobs(run_config, api_key=secrets.serpapi_key)
-        raw_count = sum(len(r.get("jobs_results", [])) for r in responses)
-        summary["fetched"] = raw_count
+        try:
+            responses = fetch_jobs(run_config, api_key=secrets.serpapi_key)
+            raw_count = sum(len(r.get("jobs_results", [])) for r in responses)
+            summary["fetched"] = raw_count
 
-        all_postings = []
-        for resp in responses:
-            all_postings.extend(normalize_serpapi_jobs(resp, fetched_at=now))
-        summary["normalized"] = len(all_postings)
+            all_postings = []
+            for resp in responses:
+                all_postings.extend(normalize_serpapi_jobs(resp, fetched_at=now))
+            summary["normalized"] = len(all_postings)
 
-        filtered = filter_module.apply(all_postings, run_config, now=now)
-        summary["filtered_first_pass"] = len(filtered)
+            filtered = filter_module.apply(all_postings, run_config, now=now)
+            summary["filtered_first_pass"] = len(filtered)
 
-        if not dry_run:
-            client = firecrawl_client(secrets)
-            enriched = fill_short_descriptions(
-                filtered,
-                min_chars=run_config.enrichment.firecrawl_min_jd_chars,
-                client=client,
+            if not dry_run:
+                client = firecrawl_client(secrets)
+                enriched = fill_short_descriptions(
+                    filtered,
+                    min_chars=run_config.enrichment.firecrawl_min_jd_chars,
+                    client=client,
+                )
+            else:
+                enriched = filtered
+
+            # Re-filter the enriched subset only (spec §6.4).
+            changed_ids = {
+                p.posting_id for p, e in zip(filtered, enriched) if p.description != e.description
+            }
+            rest = [p for p in enriched if p.posting_id not in changed_ids]
+            rechecked = filter_module.apply(
+                [p for p in enriched if p.posting_id in changed_ids],
+                run_config,
+                now=now,
             )
-        else:
-            enriched = filtered
+            filtered_after = rest + rechecked
+            summary["filtered"] = len(filtered_after)
 
-        # Re-filter the enriched subset only (spec §6.4).
-        changed_ids = {
-            p.posting_id for p, e in zip(filtered, enriched) if p.description != e.description
-        }
-        rest = [p for p in enriched if p.posting_id not in changed_ids]
-        rechecked = filter_module.apply(
-            [p for p in enriched if p.posting_id in changed_ids],
-            run_config,
-            now=now,
-        )
-        filtered_after = rest + rechecked
-        summary["filtered"] = len(filtered_after)
+            tagged = tag_is_new(filtered_after, store)
+            summary["new"] = sum(1 for p in tagged if p.is_new)
 
-        tagged = tag_is_new(filtered_after, store)
-        summary["new"] = sum(1 for p in tagged if p.is_new)
+            scored = score_module.apply(tagged, run_config, now=now)
+            summary["scored"] = len(scored)
 
-        scored = score_module.apply(tagged, run_config, now=now)
-        summary["scored"] = len(scored)
+            result.finished_at = datetime.now()
+            result.status = "ok"
+            result.summary = summary
 
-        result.finished_at = datetime.now()
-        result.status = "ok"
-        result.summary = summary
+            if dry_run:
+                log.info("Dry run complete, skipping sinks")
+                return result
 
-        if dry_run:
-            log.info("Dry run complete, skipping sinks")
+            write_run(
+                store=store,
+                postings=scored,
+                result=result,
+                config_snapshot=_config_snapshot(run_config),
+            )
+
+            try:
+                workbook = open_workbook(run_config.name, secrets, run_config.output)
+                write_sheets(
+                    workbook=workbook,
+                    postings=scored,
+                    output_config=run_config.output,
+                )
+            except Exception as e:
+                log.exception("Sheet write failed")
+                result.status = "sheet_write_failed"
+                result.error = str(e)
+                store.record_run(
+                    run_id=result.run_id, run_name=result.run_name,
+                    started_at=result.started_at, finished_at=result.finished_at,
+                    status=result.status, config_snapshot=_config_snapshot(run_config),
+                    summary=result.summary, error=result.error,
+                )
+
             return result
 
-        write_run(
-            store=store,
-            postings=scored,
-            result=result,
-            config_snapshot=_config_snapshot(run_config),
-        )
-
-        try:
-            workbook = open_workbook(run_config.name, secrets, run_config.output)
-            write_sheets(
-                workbook=workbook,
-                postings=scored,
-                output_config=run_config.output,
-            )
         except Exception as e:
-            log.exception("Sheet write failed")
-            result.status = "sheet_write_failed"
+            log.exception("Run failed")
+            result.status = "failed"
             result.error = str(e)
-            store.record_run(
-                run_id=result.run_id, run_name=result.run_name,
-                started_at=result.started_at, finished_at=result.finished_at,
-                status=result.status, config_snapshot=_config_snapshot(run_config),
-                summary=result.summary, error=result.error,
-            )
-
-        return result
-
-    except Exception as e:
-        log.exception("Run failed")
-        result.status = "failed"
-        result.error = str(e)
-        result.finished_at = datetime.now()
-        if not dry_run:
-            store.record_run(
-                run_id=result.run_id, run_name=result.run_name,
-                started_at=result.started_at, finished_at=result.finished_at,
-                status="failed", config_snapshot=_config_snapshot(run_config),
-                summary=summary, error=str(e),
-            )
-        return result
+            result.finished_at = datetime.now()
+            if not dry_run:
+                store.record_run(
+                    run_id=result.run_id, run_name=result.run_name,
+                    started_at=result.started_at, finished_at=result.finished_at,
+                    status="failed", config_snapshot=_config_snapshot(run_config),
+                    summary=summary, error=str(e),
+                )
+            return result
+    finally:
+        handler.flush()
+        file_logger.removeHandler(handler)
+        handler.close()
 
 
 def _config_snapshot(cfg: RunConfig) -> dict:
