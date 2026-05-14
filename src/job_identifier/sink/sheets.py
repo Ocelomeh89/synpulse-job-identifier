@@ -46,3 +46,56 @@ def aggregate_companies(postings: list[Posting]) -> list[dict]:
         })
     rows.sort(key=lambda r: r["score"], reverse=True)
     return rows
+
+
+def build_postings_rows(postings: list[Posting]) -> list[dict]:
+    rows = []
+    for p in sorted(postings, key=lambda p: p.score, reverse=True):
+        rows.append({
+            "posting_id": p.posting_id,
+            "company": p.company,
+            "title": p.title,
+            "location": p.location,
+            "country": p.country,
+            "posted_date": p.posted_date.isoformat(),
+            "role_type": p.role_type.value,
+            "seniority": p.seniority.value,
+            "skill_matches": ", ".join(p.skill_matches),
+            "score": p.score,
+            "recency_score": p.recency_score,
+            "seniority_score": p.seniority_score,
+            "description_excerpt": p.description_excerpt,
+            "job_url": p.source_url,
+            "is_new": "NEW" if p.is_new else "",
+            "linkedin_company_search": _linkedin_search(p.company),
+            "assigned_to": "",
+            "notes": "",
+        })
+    return rows
+
+
+def merge_preserved_edits(
+    new_rows: list[dict],
+    existing_rows: list[dict],
+    key_field: str,
+) -> tuple[list[dict], list[dict]]:
+    """Merge assigned_to/notes from existing_rows into new_rows by key_field.
+    Returns (merged_new_rows, archived_rows_with_lost_edits)."""
+    existing_by_key: dict[str, dict] = {
+        r[key_field]: r for r in existing_rows if r.get(key_field)
+    }
+    merged: list[dict] = []
+    for r in new_rows:
+        key = r.get(key_field)
+        prev = existing_by_key.get(key)
+        if prev:
+            r = {**r, "assigned_to": prev.get("assigned_to", ""), "notes": prev.get("notes", "")}
+        merged.append(r)
+
+    new_keys = {r.get(key_field) for r in new_rows}
+    archived = [
+        r for r in existing_rows
+        if r.get(key_field) not in new_keys
+        and (r.get("assigned_to") or r.get("notes"))
+    ]
+    return merged, archived
