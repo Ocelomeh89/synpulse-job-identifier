@@ -78,5 +78,48 @@ def posting_exists(self, posting_id: str) -> bool:
         return False
 
 
+def record_run(
+    self,
+    run_id: str,
+    run_name: str,
+    started_at: datetime,
+    finished_at: datetime | None,
+    status: str,
+    config_snapshot: dict,
+    summary: dict,
+    error: str | None,
+) -> None:
+    self.db["runs"].insert({
+        "run_id": run_id,
+        "run_name": run_name,
+        "started_at": started_at.isoformat(),
+        "finished_at": finished_at.isoformat() if finished_at else None,
+        "status": status,
+        "config_snapshot": json.dumps(config_snapshot),
+        "summary": json.dumps(summary),
+        "error": error,
+    }, pk="run_id", replace=True)
+
+
+def link_posting_to_run(self, run_id: str, posting_id: str, is_new: bool, score: float) -> None:
+    self.db["posting_run_link"].insert({
+        "run_id": run_id,
+        "posting_id": posting_id,
+        "is_new": 1 if is_new else 0,
+        "score": score,
+    }, pk=("run_id", "posting_id"), replace=True)
+
+
+def last_run_for_name(self, run_name: str) -> dict | None:
+    rows = list(self.db.query(
+        "SELECT * FROM runs WHERE run_name = ? ORDER BY started_at DESC LIMIT 1",
+        [run_name],
+    ))
+    return rows[0] if rows else None
+
+
 Store.upsert_posting = upsert_posting
 Store.posting_exists = posting_exists
+Store.record_run = record_run
+Store.link_posting_to_run = link_posting_to_run
+Store.last_run_for_name = last_run_for_name
