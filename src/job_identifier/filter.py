@@ -64,3 +64,13 @@ def classify_seniority(title: str) -> Seniority:
     if re.search(r"\b(senior|sr\.?)\b", t):
         return Seniority.SENIOR_IC
     return Seniority.IC
+
+
+def matches_industry(title: str, company: str, description: str, include_keywords: list[str]) -> bool:
+    haystack = f"{title} {company} {description}".lower()
+    return any(kw.lower() in haystack for kw in include_keywords)
+
+
+def is_denied(company: str, deny_companies: list[str]) -> bool:
+    c = company.lower()
+    return any(d.lower() == c for d in deny_companies)
