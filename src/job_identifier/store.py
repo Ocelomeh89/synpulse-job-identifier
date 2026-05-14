@@ -1,7 +1,11 @@
 from __future__ import annotations
+import json
+from datetime import datetime
 from pathlib import Path
 
 from sqlite_utils import Database
+
+from job_identifier.models import Posting
 
 
 _SCHEMA_SQL = """
@@ -42,3 +46,37 @@ class Store:
 
     def init_schema(self) -> None:
         self.db.executescript(_SCHEMA_SQL)
+
+
+def upsert_posting(self, posting: Posting, seen_at: datetime) -> bool:
+    """Returns True if newly inserted, False if already existed."""
+    ts = seen_at.isoformat()
+    try:
+        existing = self.db["postings"].get(posting.posting_id)
+    except Exception:
+        existing = None
+    if existing is None:
+        self.db["postings"].insert({
+            "posting_id": posting.posting_id,
+            "payload": json.dumps(posting.to_dict()),
+            "first_seen_at": ts,
+            "last_seen_at": ts,
+        }, pk="posting_id")
+        return True
+    self.db["postings"].update(posting.posting_id, {
+        "payload": json.dumps(posting.to_dict()),
+        "last_seen_at": ts,
+    })
+    return False
+
+
+def posting_exists(self, posting_id: str) -> bool:
+    try:
+        self.db["postings"].get(posting_id)
+        return True
+    except Exception:
+        return False
+
+
+Store.upsert_posting = upsert_posting
+Store.posting_exists = posting_exists
