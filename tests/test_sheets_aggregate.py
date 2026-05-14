@@ -46,3 +46,22 @@ def test_aggregate_sorts_by_score_desc():
     rows = aggregate_companies(postings)
     assert rows[0]["company"] == "High"
     assert rows[1]["company"] == "Low"
+
+
+def test_aggregate_sample_jd_url_is_most_recent():
+    def _p_custom(score, posted, url):
+        return Posting(
+            posting_id=f"id-{posted}", source="s", source_url=url,
+            fetched_at=datetime(2026,5,13), title="t", company="Acme",
+            company_normalized="acme", location="l", country="US",
+            posted_date=posted, description="d", description_excerpt="",
+            skill_matches=["Foundry"], industry_match=True,
+            role_type=RoleType.ENGINEERING, seniority=Seniority.IC,
+            recency_score=0.0, seniority_score=0.0, score=score, is_new=False,
+        )
+    postings = [
+        _p_custom(score=0.9, posted=date(2026, 5, 1), url="https://OLD-but-high-score"),
+        _p_custom(score=0.3, posted=date(2026, 5, 10), url="https://NEW-low-score"),
+    ]
+    [row] = aggregate_companies(postings)
+    assert row["sample_jd_url"] == "https://NEW-low-score"

@@ -41,7 +41,7 @@ def aggregate_companies(postings: list[Posting]) -> list[dict]:
             "skill_matches": ", ".join(skills),
             "country": majority_country,
             "linkedin_company_search": _linkedin_search(company),
-            "sample_jd_url": top.source_url,
+            "sample_jd_url": max(group, key=lambda p: p.posted_date).source_url,
             "assigned_to": "",
             "notes": "",
         })
