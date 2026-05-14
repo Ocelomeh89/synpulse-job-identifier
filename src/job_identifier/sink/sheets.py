@@ -140,3 +140,67 @@ def write_sheets(workbook, postings: list[Posting], output_config) -> None:
     archived = archived_companies + archived_postings
     if archived:
         workbook.archived_tab.append_rows(archived)
+
+
+import gspread
+from google.oauth2.service_account import Credentials
+
+_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+
+
+class _GspreadTab:
+    def __init__(self, worksheet):
+        self._ws = worksheet
+
+    def read_rows(self) -> list[dict]:
+        try:
+            return self._ws.get_all_records()
+        except Exception:
+            return []
+
+    def clear(self) -> None:
+        self._ws.clear()
+
+    def write_rows(self, rows: list[dict]) -> None:
+        if not rows:
+            return
+        headers = list(rows[0].keys())
+        values = [headers] + [[r.get(h, "") for h in headers] for r in rows]
+        self._ws.update("A1", values)
+
+    def append_rows(self, rows: list[dict]) -> None:
+        if not rows:
+            return
+        existing = self.read_rows()
+        all_rows = existing + rows
+        self.clear()
+        self.write_rows(all_rows)
+
+
+class GspreadWorkbook:
+    """Concrete Workbook implementation backed by gspread."""
+
+    def __init__(self, workbook_id: str, creds_path: str, output_config):
+        creds = Credentials.from_service_account_file(creds_path, scopes=_SCOPES)
+        client = gspread.authorize(creds)
+        self._sh = client.open_by_key(workbook_id)
+        self._output = output_config
+
+    def _get_or_create_tab(self, title: str) -> _GspreadTab:
+        try:
+            ws = self._sh.worksheet(title)
+        except gspread.WorksheetNotFound:
+            ws = self._sh.add_worksheet(title=title, rows=1000, cols=26)
+        return _GspreadTab(ws)
+
+    @property
+    def companies_tab(self) -> _GspreadTab:
+        return self._get_or_create_tab(self._output.companies_tab)
+
+    @property
+    def postings_tab(self) -> _GspreadTab:
+        return self._get_or_create_tab(self._output.postings_tab)
+
+    @property
+    def archived_tab(self) -> _GspreadTab:
+        return self._get_or_create_tab(self._output.archived_tab)
