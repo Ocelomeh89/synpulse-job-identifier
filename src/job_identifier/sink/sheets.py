@@ -1,5 +1,6 @@
 from __future__ import annotations
 from collections import Counter, defaultdict
+from typing import Protocol
 from urllib.parse import quote_plus
 
 from job_identifier.models import Posting, Seniority
@@ -99,3 +100,43 @@ def merge_preserved_edits(
         and (r.get("assigned_to") or r.get("notes"))
     ]
     return merged, archived
+
+
+class TabProtocol(Protocol):
+    def read_rows(self) -> list[dict]: ...
+    def clear(self) -> None: ...
+    def write_rows(self, rows: list[dict]) -> None: ...
+    def append_rows(self, rows: list[dict]) -> None: ...
+
+
+class WorkbookProtocol(Protocol):
+    @property
+    def companies_tab(self) -> TabProtocol: ...
+    @property
+    def postings_tab(self) -> TabProtocol: ...
+    @property
+    def archived_tab(self) -> TabProtocol: ...
+
+
+def write_sheets(workbook, postings: list[Posting], output_config) -> None:
+    existing_companies = workbook.companies_tab.read_rows()
+    existing_postings = workbook.postings_tab.read_rows()
+
+    new_companies = aggregate_companies(postings)
+    new_postings = build_postings_rows(postings)
+
+    merged_companies, archived_companies = merge_preserved_edits(
+        new_companies, existing_companies, key_field="company",
+    )
+    merged_postings, archived_postings = merge_preserved_edits(
+        new_postings, existing_postings, key_field="posting_id",
+    )
+
+    workbook.companies_tab.clear()
+    workbook.companies_tab.write_rows(merged_companies)
+    workbook.postings_tab.clear()
+    workbook.postings_tab.write_rows(merged_postings)
+
+    archived = archived_companies + archived_postings
+    if archived:
+        workbook.archived_tab.append_rows(archived)
