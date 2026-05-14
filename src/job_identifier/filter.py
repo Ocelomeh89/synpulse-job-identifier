@@ -1,7 +1,9 @@
 from __future__ import annotations
 import re
+from dataclasses import replace
+from datetime import datetime
 
-from job_identifier.models import RoleType, Seniority
+from job_identifier.models import Posting, RoleType, RunConfig, Seniority
 
 
 def find_skill_matches(description: str, pattern: str) -> list[str]:
@@ -74,3 +76,31 @@ def matches_industry(title: str, company: str, description: str, include_keyword
 def is_denied(company: str, deny_companies: list[str]) -> bool:
     c = company.lower()
     return any(d.lower() == c for d in deny_companies)
+
+
+def apply(postings: list[Posting], cfg: RunConfig, now: datetime) -> list[Posting]:
+    out: list[Posting] = []
+    for p in postings:
+        skill_matches = find_skill_matches(p.description, cfg.skill.hard_match_regex)
+        if not skill_matches:
+            continue
+        if (now.date() - p.posted_date).days > cfg.recency_window_days:
+            continue
+        if not matches_industry(
+            p.title, p.company, p.description, cfg.industry.include_keywords
+        ):
+            continue
+        if is_denied(p.company, cfg.industry.deny_companies):
+            continue
+
+        out.append(
+            replace(
+                p,
+                skill_matches=skill_matches,
+                industry_match=True,
+                role_type=classify_role_type(p.title, p.description),
+                seniority=classify_seniority(p.title),
+                description_excerpt=build_excerpt(p.description, skill_matches),
+            )
+        )
+    return out
