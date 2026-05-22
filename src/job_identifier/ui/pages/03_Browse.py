@@ -46,4 +46,4 @@ filtered = [
     and min_score <= float(p["score"] or 0) <= max_score
 ]
 filtered.sort(key=lambda p: float(p["score"] or 0), reverse=True)
-st.dataframe(filtered, use_container_width=True)
+st.dataframe(filtered, width="stretch")

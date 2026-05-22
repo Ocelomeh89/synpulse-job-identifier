@@ -37,7 +37,7 @@ for r in runs:
             "Total": "—",
         })
 
-st.dataframe(rows, use_container_width=True)
+st.dataframe(rows, width="stretch")
 
 st.divider()
 st.subheader("Trigger a run")

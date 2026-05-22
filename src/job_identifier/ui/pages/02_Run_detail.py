@@ -39,7 +39,7 @@ for r in last_runs:
         "New": summary.get("new", "—"),
         "Scored": summary.get("scored", "—"),
     })
-st.dataframe(history_rows, use_container_width=True)
+st.dataframe(history_rows, width="stretch")
 
 st.subheader("What's new since last run (top 10)")
 latest = last_runs[0]
@@ -57,7 +57,7 @@ new_postings = list(store.db.query("""
     LIMIT 10
 """, [latest["run_id"]]))
 if new_postings:
-    st.dataframe(new_postings, use_container_width=True)
+    st.dataframe(new_postings, width="stretch")
 else:
     st.write("No new postings in the most recent run.")
 
