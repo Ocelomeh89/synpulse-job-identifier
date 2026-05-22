@@ -94,7 +94,10 @@ def run(
             filtered_after = rest + rechecked
             summary["filtered"] = len(filtered_after)
 
-            tagged = tag_is_new(filtered_after, store)
+            collapsed = filter_module.collapse_recruiter_variants(filtered_after)
+            summary["after_variant_collapse"] = len(collapsed)
+
+            tagged = tag_is_new(collapsed, store)
             summary["new"] = sum(1 for p in tagged if p.is_new)
 
             scored = score_module.apply(tagged, run_config, now=now)

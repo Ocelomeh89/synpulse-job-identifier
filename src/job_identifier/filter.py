@@ -74,8 +74,14 @@ def matches_industry(title: str, company: str, description: str, include_keyword
 
 
 def is_denied(company: str, deny_companies: list[str]) -> bool:
+    """True if the company name contains any deny-list entry (case-insensitive).
+
+    Substring match (not exact) so 'System One' denies 'System One Holdings LLC'.
+    Keep deny entries specific enough to avoid catching legitimate targets
+    (e.g. don't add 'IBM' if it might match 'IBM Insurance Holdings').
+    """
     c = company.lower()
-    return any(d.lower() == c for d in deny_companies)
+    return any(d.lower() in c for d in deny_companies)
 
 
 def is_allowed(company: str, allow_companies: list[str]) -> bool:
@@ -87,6 +93,37 @@ def is_allowed(company: str, allow_companies: list[str]) -> bool:
     """
     c = company.lower()
     return any(a.lower() in c for a in allow_companies)
+
+
+_TRAILING_NUMBER = re.compile(r"[\s#:_-]+\d+\s*$")
+
+
+def _base_title(title: str) -> str:
+    return _TRAILING_NUMBER.sub("", title.strip())
+
+
+def collapse_recruiter_variants(postings: list[Posting]) -> list[Posting]:
+    """Collapse near-duplicate postings from the same recruiter.
+
+    Staffing firms (Apex Systems, System One, etc.) post the same role with a
+    trailing tracking number — "Palantir Platform Engineer 14", "...17", "...32".
+    Group by (company_normalized, base_title-with-trailing-digits-stripped) and
+    keep the representative with the most recent posted_date (tie-break: longest
+    description). Postings whose base_title equals their original title are
+    passed through unchanged.
+    """
+    groups: dict[tuple[str, str], list[Posting]] = {}
+    for p in postings:
+        key = (p.company_normalized, _base_title(p.title).lower())
+        groups.setdefault(key, []).append(p)
+    out: list[Posting] = []
+    for variants in groups.values():
+        if len(variants) == 1:
+            out.append(variants[0])
+        else:
+            variants.sort(key=lambda p: (p.posted_date, len(p.description)), reverse=True)
+            out.append(variants[0])
+    return out
 
 
 def apply(postings: list[Posting], cfg: RunConfig, now: datetime) -> list[Posting]:
