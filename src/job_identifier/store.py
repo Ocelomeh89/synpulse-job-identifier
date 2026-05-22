@@ -42,6 +42,9 @@ CREATE INDEX IF NOT EXISTS idx_link_run ON posting_run_link(run_id);
 
 class Store:
     def __init__(self, path: str | Path):
+        parent = Path(path).parent
+        if str(parent) and parent != Path("."):
+            parent.mkdir(parents=True, exist_ok=True)
         self.db = Database(path)
 
     def init_schema(self) -> None:
