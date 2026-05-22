@@ -62,7 +62,8 @@ else:
     st.write("No new postings in the most recent run.")
 
 st.subheader("Last run log")
-log_file = Path("data/logs") / f"{latest['run_id']}.log"
+from job_identifier.store import writable_dir_for
+log_file = writable_dir_for(Path("data/logs")) / f"{latest['run_id']}.log"
 if log_file.exists():
     with st.expander("Show JSON log", expanded=False):
         st.code(log_file.read_text(), language="json")

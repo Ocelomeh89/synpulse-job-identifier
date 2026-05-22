@@ -54,7 +54,8 @@ def run(
         status="running",
         summary=summary,
     )
-    log_dir = Path("data/logs")
+    from job_identifier.store import writable_dir_for
+    log_dir = writable_dir_for(Path("data/logs"))
     file_logger, handler = setup_run_logger(run_id, log_dir)
     try:
         try:

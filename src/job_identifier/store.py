@@ -40,12 +40,34 @@ CREATE INDEX IF NOT EXISTS idx_link_run ON posting_run_link(run_id);
 """
 
 
+def writable_dir_for(preferred_dir: Path) -> Path:
+    """Return preferred_dir if writable, else a /tmp fallback mirroring its name.
+
+    Streamlit Cloud mounts the repo read-only at /mount/src, so relative paths
+    like `data/...` can't be created there. /tmp is always writable but
+    ephemeral — fine because dedupe state and per-run logs are already
+    documented as ephemeral on Cloud.
+    """
+    try:
+        preferred_dir.mkdir(parents=True, exist_ok=True)
+        probe = preferred_dir / ".write_probe"
+        probe.touch()
+        probe.unlink()
+        return preferred_dir
+    except OSError:
+        fallback = Path("/tmp/job_identifier") / preferred_dir.name
+        fallback.mkdir(parents=True, exist_ok=True)
+        return fallback
+
+
 class Store:
     def __init__(self, path: str | Path):
-        parent = Path(path).parent
-        if str(parent) and parent != Path("."):
-            parent.mkdir(parents=True, exist_ok=True)
-        self.db = Database(path)
+        path = Path(path)
+        if str(path) == ":memory:":
+            self.db = Database(":memory:")
+            return
+        writable_dir = writable_dir_for(path.parent)
+        self.db = Database(writable_dir / path.name)
 
     def init_schema(self) -> None:
         self.db.executescript(_SCHEMA_SQL)
