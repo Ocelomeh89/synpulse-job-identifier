@@ -114,9 +114,17 @@ def load_secrets(run_names: list[str], dotenv_path: Path | None = None) -> Secre
         env_key = f"GSHEET_WORKBOOK_{name.upper()}"
         workbook_ids[name] = _required(env_key)
 
+    creds_path = os.environ.get("GOOGLE_SHEETS_CREDS_PATH") or None
+    creds_json = os.environ.get("GOOGLE_SHEETS_CREDS_JSON") or None
+    if not creds_path and not creds_json:
+        raise RuntimeError(
+            "One of GOOGLE_SHEETS_CREDS_PATH or GOOGLE_SHEETS_CREDS_JSON is required"
+        )
+
     return Secrets(
         serpapi_key=_required("SERPAPI_KEY"),
         firecrawl_api_key=_required("FIRECRAWL_API_KEY"),
-        google_sheets_creds_path=_required("GOOGLE_SHEETS_CREDS_PATH"),
+        google_sheets_creds_path=creds_path,
+        google_sheets_creds_json=creds_json,
         workbook_ids_by_run=workbook_ids,
     )

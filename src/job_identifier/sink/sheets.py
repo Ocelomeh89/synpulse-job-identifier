@@ -180,8 +180,23 @@ class _GspreadTab:
 class GspreadWorkbook:
     """Concrete Workbook implementation backed by gspread."""
 
-    def __init__(self, workbook_id: str, creds_path: str, output_config):
-        creds = Credentials.from_service_account_file(creds_path, scopes=_SCOPES)
+    def __init__(
+        self,
+        workbook_id: str,
+        output_config,
+        *,
+        creds_path: str | None = None,
+        creds_json: str | None = None,
+    ):
+        if creds_json:
+            import json
+            creds = Credentials.from_service_account_info(
+                json.loads(creds_json), scopes=_SCOPES
+            )
+        elif creds_path:
+            creds = Credentials.from_service_account_file(creds_path, scopes=_SCOPES)
+        else:
+            raise ValueError("Either creds_path or creds_json must be provided")
         client = gspread.authorize(creds)
         self._sh = client.open_by_key(workbook_id)
         self._output = output_config

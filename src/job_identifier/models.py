@@ -82,7 +82,8 @@ class Posting:
 class Secrets:
     serpapi_key: str
     firecrawl_api_key: str
-    google_sheets_creds_path: str
+    google_sheets_creds_path: str | None
+    google_sheets_creds_json: str | None
     workbook_ids_by_run: dict[str, str]
 
 

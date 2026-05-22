@@ -31,8 +31,9 @@ def open_workbook(run_name: str, secrets: Secrets, output_config) -> GspreadWork
     workbook_id = secrets.workbook_ids_by_run[run_name]
     return GspreadWorkbook(
         workbook_id=workbook_id,
-        creds_path=secrets.google_sheets_creds_path,
         output_config=output_config,
+        creds_path=secrets.google_sheets_creds_path,
+        creds_json=secrets.google_sheets_creds_json,
     )
 
 

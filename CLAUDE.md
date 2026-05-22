@@ -137,6 +137,25 @@ These came up during quality reviews. None block MVP; document as future work:
 7. **Partner walkthrough** — share the Sheet with one Synpulse partner, get reactions on the Companies tab columns + scoring.
 8. **Tune `config/runs.yaml`** if signal quality is off (see decision rules in `docs/test-queries.md`).
 
+## Deploy to Streamlit Community Cloud
+
+1. Go to https://share.streamlit.io and sign in with the GitHub account that has access to this repo.
+2. Click **Create app** → **Deploy from GitHub**.
+3. Fill in:
+   - Repository: `Ocelomeh89/synpulse-job-identifier`
+   - Branch: `main`
+   - Main file path: `src/job_identifier/ui/app.py`
+   - Python version: 3.12 (3.14 has the editable-install bug — irrelevant on Cloud, but stay on 3.12 for safety)
+4. Click **Advanced settings** → **Secrets**. Paste the contents of your local `.streamlit/secrets.toml` (gitignored — ask Claude to regenerate from `.env` + the service-account JSON if you ever lose it).
+5. Click **Deploy**. First build takes ~3–5 minutes (installing google-search-results, gspread, etc.).
+6. Once live, share the URL with partners. They can browse and trigger runs; the Sheet is still the editable surface.
+
+### Caveats on Streamlit Cloud
+
+- **SQLite is ephemeral.** Container sleeps after inactivity; on wake `data/jobs.db` is empty. Impact: the "what's new since last run" diff in the UI resets after each cold start. Sheet data is unaffected. P2 fix: move to Turso or Neon Postgres.
+- **No file-system creds.** Credentials must be provided via `GOOGLE_SHEETS_CREDS_JSON` (inline JSON), not `GOOGLE_SHEETS_CREDS_PATH`. The Sheets sink accepts both.
+- **Memory limits.** Streamlit Cloud caps at 1 GB RAM. Each run holds ≤ 26 postings in memory; nowhere near the limit. If we add LLM classification (P4) we may need to revisit.
+
 ## Backlog (post-MVP, in `PLAN.md`)
 
 - P1: Company enrichment via Apollo/Clearbit/ZoomInfo
