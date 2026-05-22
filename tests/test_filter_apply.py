@@ -101,3 +101,40 @@ def test_keeps_valid_posting_with_classification():
     assert p.role_type == RoleType.ENGINEERING
     assert p.seniority == Seniority.SENIOR_IC
     assert p.description_excerpt != ""
+
+
+def _config_with_allow(allow: list[str]):
+    cfg = _config()
+    return replace(
+        cfg,
+        industry=RunIndustryConfig(
+            include_keywords=cfg.industry.include_keywords,
+            deny_companies=cfg.industry.deny_companies,
+            allow_companies=allow,
+        ),
+    )
+
+
+def test_allow_company_bypasses_industry_keyword_gate():
+    # No "insurance" keyword in title/company/description, but Acrisure is on allow-list
+    posting = _posting(
+        title="Forward-Deployed Partner (Palantir Foundry / AIP)",
+        company="Acrisure Technology Group, LLC",
+        company_normalized="acrisure technology group, llc",
+        description="Build Foundry pipelines for our risk platform.",
+    )
+    out = filter_apply([posting], _config_with_allow(["Acrisure"]), now=datetime(2026, 5, 13))
+    assert len(out) == 1
+    assert out[0].industry_match is True
+
+
+def test_allow_list_does_not_override_deny_list():
+    posting = _posting(
+        company="Accenture",
+        company_normalized="accenture",
+        description="Foundry work for insurance clients.",
+    )
+    out = filter_apply(
+        [posting], _config_with_allow(["Accenture"]), now=datetime(2026, 5, 13)
+    )
+    assert out == []

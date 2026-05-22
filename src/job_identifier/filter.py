@@ -78,6 +78,17 @@ def is_denied(company: str, deny_companies: list[str]) -> bool:
     return any(d.lower() == c for d in deny_companies)
 
 
+def is_allowed(company: str, allow_companies: list[str]) -> bool:
+    """True if company is on the allow list (substring match, case-insensitive).
+
+    Allow-list bypasses the industry-keyword gate (the JD may not mention
+    insurance terms even though the company is a known target). Deny-list and
+    recency still apply.
+    """
+    c = company.lower()
+    return any(a.lower() in c for a in allow_companies)
+
+
 def apply(postings: list[Posting], cfg: RunConfig, now: datetime) -> list[Posting]:
     out: list[Posting] = []
     for p in postings:
@@ -86,11 +97,12 @@ def apply(postings: list[Posting], cfg: RunConfig, now: datetime) -> list[Postin
             continue
         if (now.date() - p.posted_date).days > cfg.recency_window_days:
             continue
-        if not matches_industry(
+        if is_denied(p.company, cfg.industry.deny_companies):
+            continue
+        allowed = is_allowed(p.company, cfg.industry.allow_companies)
+        if not allowed and not matches_industry(
             p.title, p.company, p.description, cfg.industry.include_keywords
         ):
-            continue
-        if is_denied(p.company, cfg.industry.deny_companies):
             continue
 
         out.append(

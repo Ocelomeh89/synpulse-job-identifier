@@ -14,10 +14,16 @@ runs:
   - name: palantir_insurance
     enabled: true
     skill:
-      hard_match_regex: '\b(Foundry|AIP)\b'
+      # Apollo added (Palantir's third major product line). JD body must still
+      # contain Foundry/AIP/Apollo as a whole word.
+      hard_match_regex: '\b(Foundry|AIP|Apollo)\b'
       query_terms:
-        - '"Palantir Foundry" insurance'
-        - '"Palantir AIP" insurance'
+        # Skill-only, no "insurance" seed — that suffix kills recall on
+        # tech-first companies like Acrisure whose JDs don't say "insurance".
+        # Industry gating happens post-fetch via allow_companies + keywords.
+        - 'Palantir Foundry'
+        - 'Palantir AIP'
+        - 'Palantir Apollo'
         - 'Palantir reinsurance'
     industry:
       include_keywords:
@@ -28,11 +34,67 @@ runs:
         - reinsurer
         - underwriting
         - claims
+        - broker
+        - brokerage
+        - MGA
+        - Lloyd's
         - seguros
         - aseguradora
         - reaseguradora
+        - corredor
         - suscripción
         - siniestros
+      # Allow-list: companies whose JDs may not contain "insurance" keywords
+      # but are known industry targets. Bypasses the keyword gate; deny-list
+      # and recency still apply. Substring match (case-insensitive).
+      allow_companies:
+        # US/global carriers
+        - AIG
+        - Chubb
+        - Travelers
+        - Liberty Mutual
+        - Allstate
+        - Progressive
+        - Nationwide
+        - Hartford
+        - Berkshire Hathaway
+        - Prudential
+        - MetLife
+        # Brokerages
+        - Acrisure
+        - Marsh
+        - Aon
+        - Willis Towers Watson
+        - Gallagher
+        - HUB International
+        - Lockton
+        - Brown & Brown
+        # Reinsurers (UK / Bermuda / global)
+        - Munich Re
+        - Swiss Re
+        - Hannover Re
+        - SCOR
+        - Everest Re
+        - RenaissanceRe
+        - Arch Capital
+        - PartnerRe
+        - Ascot
+        - Hiscox
+        # UK / EU
+        - Aviva
+        - Legal & General
+        - Direct Line
+        - Admiral
+        - Beazley
+        - Lancashire
+        - Allianz
+        - AXA
+        - Zurich
+        - Generali
+        # LatAm
+        - GNP Seguros
+        - Qualitas
+        - Mapfre
       deny_companies:
         - Palantir Technologies
         - Accenture
@@ -43,4 +105,11 @@ runs:
         - Tata Consultancy
         - Infosys
         - Wipro
+        # Staffing / contracting firms surfaced by the broader query
+        - NasTech Global
+        - Smart IT Frame
+        - Eliassen Group
+        - SHINE Systems
+        - InfoVision
+        - IS4S
     geos: [US, CA, MX, UK, BM]

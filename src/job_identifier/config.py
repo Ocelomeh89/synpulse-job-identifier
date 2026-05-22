@@ -26,6 +26,7 @@ class _SkillModel(BaseModel):
 class _IndustryModel(BaseModel):
     include_keywords: list[str]
     deny_companies: list[str] = Field(default_factory=list)
+    allow_companies: list[str] = Field(default_factory=list)
 
 
 class _ScoreWeightsModel(BaseModel):
@@ -77,6 +78,7 @@ def load_runs(path: Path) -> list[RunConfig]:
             industry=RunIndustryConfig(
                 include_keywords=r.industry.include_keywords,
                 deny_companies=r.industry.deny_companies,
+                allow_companies=r.industry.allow_companies,
             ),
             geos=r.geos,
             recency_window_days=data.defaults.recency_window_days,

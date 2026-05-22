@@ -97,6 +97,7 @@ class RunSkillConfig:
 class RunIndustryConfig:
     include_keywords: list[str]
     deny_companies: list[str]
+    allow_companies: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
